@@ -1,0 +1,116 @@
+CLIENT_ECOLUCK - ADMIN STORE API CATALOG
+
+0. NGUYÊN TẮC CHUNG
+P01: Base path nên thống nhất là /api/store-admin để frontend và backend dễ map module.
+P02: Không nên cho client truyền store_id. Backend nên suy ra store hiện tại từ token/session admin store.
+P03: API list nên hỗ trợ chung page, page_size, q, sort, status, from, to để tái sử dụng giữa orders, tickets, complaints, reports.
+P04: Response nên có format ổn định: data, meta, errors. Nếu là list thì meta nên có paging và tổng số lượng.
+P05: Nên có WebSocket hoặc SSE cho đơn mới, cảnh báo SLA, khiếu nại mới và cập nhật trạng thái đơn theo thời gian thực.
+
+1. AUTH VÀ BOOTSTRAP
+- GET /api/store-admin/me | Lấy thông tin user admin store, role, approval status, store hiện tại. | AdminStoreRoute, adminStoreSession
+- GET /api/store-admin/bootstrap | Lấy dữ liệu khởi động shell admin: tên cửa hàng, số đơn chờ, số cảnh báo, số khiếu nại mới. | AdminStoreLayout, badge header
+
+2. DASHBOARD
+- GET /api/store-admin/dashboard/summary | Tổng hợp doanh thu, quick stats, inventory pulse, ticket redemption, attention items. | dashboard.tsx
+- PATCH /api/store-admin/operating-state | Bật tắt nhận đơn, tạm nghỉ, đồng bộ trạng thái vận hành của cửa hàng. | dashboard.tsx, store-profile.tsx
+
+3. HỒ SƠ CỬA HÀNG
+- GET /api/store-admin/profile | Lấy hồ sơ cửa hàng: tên, tagline, địa chỉ, SĐT, license, logo, approval status. | store-profile.tsx
+- PATCH /api/store-admin/profile | Cập nhật hồ sơ cửa hàng từ popup Edit Profile. | EditStoreProfile.tsx
+- POST /api/store-admin/profile/image | Upload hoặc đổi ảnh/logo cửa hàng. | EditStoreProfile.tsx
+- PATCH /api/store-admin/profile/operating-schedule | Cấu hình giờ nhận đơn theo khung giờ, ngày trong tuần. (C19)
+- GET /api/store-admin/profile/status | Lấy nhanh trạng thái vận hành của cửa hàng nếu backend muốn tách nhẹ khỏi profile. (Polling nhanh)
+- GET /api/store-admin/profile/approval-history | Xem lịch sử duyệt cửa hàng, lý do từ chối nếu có. (Đối soát duyệt)
+
+4. SETTINGS
+- GET /api/store-admin/settings | Lấy push notifications, language, interface mode và các setting của admin store. | store-profile.tsx
+- PATCH /api/store-admin/settings | Lưu setting của admin store. | store-profile.tsx
+
+5. MENU
+- GET /api/store-admin/menu/pricing | Lấy giá standard và premium đang áp dụng cho menu. | menu-management.tsx
+- PATCH /api/store-admin/menu/pricing | Cập nhật 1-2 mức giá toàn menu. | menu-management.tsx
+- GET /api/store-admin/menu/categories | Lấy danh mục món ăn cho filter và editor. | menu-management.tsx, MenuItemEditor.tsx
+- GET /api/store-admin/menu/items | Lấy danh sách món theo category, q, in_stock, is_lucky, paging. | menu-management.tsx
+- GET /api/store-admin/menu/items/:id | Lấy chi tiết 1 món. | Editor, detail sau này
+- POST /api/store-admin/menu/items | Thêm món mới. | Nút Thêm món
+- PATCH /api/store-admin/menu/items/:id | Chỉnh sửa tên, giá, danh mục, mô tả, tier, image. | MenuItemEditor.tsx
+- DELETE /api/store-admin/menu/items/:id | Xóa món khỏi danh sách. | Action menu, MenuItemEditor.tsx
+- PATCH /api/store-admin/menu/items/:id/flags | Bật tắt is_lucky và in_stock. | menu-management.tsx
+- POST /api/store-admin/menu/items/:id/image | Đổi ảnh của món. | MenuItemEditor.tsx
+
+6. ĐƠN HÀNG
+- GET /api/store-admin/orders | Lấy danh sách đơn theo status, q, from, to, paging. | order-management.tsx
+- GET /api/store-admin/orders/counts | Lấy số lượng đơn theo từng trạng thái để render tab và badge. | Order tabs, header badge
+- GET /api/store-admin/orders/:id | Lấy chi tiết đơn: customer, phone masked, ticket code, items, pricing, dispute, timeline, internal note. | AdminOrderDetails.tsx
+- POST /api/store-admin/orders/:id/confirm | Xác nhận đơn. | order-management.tsx, detail
+- POST /api/store-admin/orders/:id/reject | Từ chối đơn, body nên có reason_code và reason_text. | order-management.tsx, detail
+- GET /api/store-admin/orders/rejection-reasons | Lấy danh sách lý do từ chối mặc định. (C21)
+- POST /api/store-admin/orders/:id/mark-ready | Chuyển đơn sang ready / shipped theo flow backend. | preparing-orders-board.tsx, detail
+- GET /api/store-admin/orders/:id/invoice | Lấy hóa đơn hoặc link file hóa đơn. | AdminOrderDetails.tsx
+- PATCH /api/store-admin/orders/:id/internal-note | Lưu ghi chú nội bộ của staff. | AdminOrderDetails.tsx
+- POST /api/store-admin/orders/:id/customer-reply | Trả lời khách trong luồng detail/dispute. | AdminOrderDetails.tsx
+- POST /api/store-admin/orders/:id/refund-ticket | Hoàn vé khi từ chối đơn hoặc lỗi cửa hàng. | C22, dispute flow
+- POST /api/store-admin/orders/:id/resolve-dispute | Đóng hoặc xử lý khiếu nại liên quan đơn. | AdminOrderDetails.tsx
+- GET /api/store-admin/orders/:id/timeline | Lấy hành trình đơn nếu backend tách riêng timeline. | Order detail
+- GET /api/store-admin/orders/:id/audit-log | Lấy lịch sử thao tác trên đơn. | Đối soát và debug
+
+7. VÉ ĐÃ ĐỔI
+- GET /api/store-admin/tickets | Lấy danh sách vé đã được dùng để gọi món tại cửa hàng. | ticket-management.tsx
+- GET /api/store-admin/tickets/:id | Lấy chi tiết 1 vé đã đổi. | Chi tiết vé, đối soát
+
+8. BÁO CÁO
+- GET /api/store-admin/reports/summary | Lấy tổng quan báo cáo cho dashboard và page reports. | dashboard.tsx, report-management.tsx
+- GET /api/store-admin/reports/revenue | Báo cáo doanh thu theo day, week, month. | report-management.tsx
+- GET /api/store-admin/reports/ticket-redemptions | Báo cáo số vé đã đổi thành công. | report-management.tsx
+- POST /api/store-admin/reports/export | Tạo job export CSV/XLSX. (C15)
+- GET /api/store-admin/reports/exports/:job_id | Lấy trạng thái export và URL tải file. (C15)
+
+9. KHIẾU NẠI
+- GET /api/store-admin/complaints | Lấy danh sách khiếu nại liên quan cửa hàng. | complaint-management.tsx
+- GET /api/store-admin/complaints/:id | Lấy chi tiết khiếu nại. | Complaint detail
+- POST /api/store-admin/complaints/:id/reply | Trả lời khiếu nại của khách. (C17)
+- PATCH /api/store-admin/complaints/:id/status | Cập nhật trạng thái khiếu nại. (C17)
+- POST /api/store-admin/complaints/:id/request-ticket-refund | Gửi đề xuất hoàn vé lên hệ thống. (C18)
+
+10. SLA
+- GET /api/store-admin/sla/config | Lấy cấu hình SLA của cửa hàng. | sla-management.tsx
+- GET /api/store-admin/sla/alerts | Lấy danh sách đơn sắp hết SLA. | sla-management.tsx, dashboard
+- GET /api/store-admin/sla/timeouts | Lấy lịch sử các đơn timeout. | sla-management.tsx
+
+11. NOTIFICATIONS, UPLOAD, AUDIT
+- GET /api/store-admin/notifications | Lấy danh sách thông báo admin store. | Header notifications
+- PATCH /api/store-admin/notifications/:id/read | Đánh dấu thông báo đã đọc. | Header notifications
+- POST /api/store-admin/uploads/presign | Lấy URL upload file lên object storage. | Upload ảnh store, upload ảnh món
+- GET /api/store-admin/audit-logs | Lấy log thao tác admin store. | Đối soát, debug
+
+12. REALTIME / EVENT NÊN CÓ
+- order.created: Hiện banner đơn mới và cập nhật list đơn ngay.
+- order.updated: Đồng bộ trạng thái đơn giữa nhiều màn admin.
+- order.timeout_warning: Cảnh báo sắp hết SLA.
+- complaint.created: Thông báo có khiếu nại mới.
+- ticket.refunded: Đồng bộ khi hoàn vé.
+- store.approval_status_changed: Đồng bộ nếu trạng thái duyệt của hàng thay đổi.
+
+13. LƯU Ý BACKEND NÊN CHỐT TỪ ĐẦU
+- B01: approval_status không nên cho store tự sửa. Frontend editor hiện tại đang mock, backend nên chỉ cho GET.
+- B02: Trạng thái đơn thật nên chi tiết hơn UI hiện tại. Tối thiểu nên có pending, confirmed, preparing, ready, picked_up, delivered, canceled, timeout, disputed.
+- B03: mark-ready không nên mặc định đẩy thẳng sang bucket cuối. Backend nên cân nhắc ready_for_pickup hoặc awaiting_shipper.
+- B04: customer phone nên được backend trả sẵn bản masked. Frontend không nên tự mask để tránh lệch rule bảo mật.
+- B05: ticket refund nên idempotent vì flow từ chối đơn và complaint có thể gọi lặp lại nhiều lần.
+
+14. THỨ TỰ ƯU TIÊN BACKEND NÊN LÀM TRƯỚC
+1. GET /api/store-admin/me
+2. GET /api/store-admin/profile
+3. PATCH /api/store-admin/profile
+4. PATCH /api/store-admin/operating-state
+5. GET /api/store-admin/menu/items
+6. POST/PATCH/DELETE /api/store-admin/menu/items
+7. GET /api/store-admin/orders
+8. GET /api/store-admin/orders/:id
+9. POST /api/store-admin/orders/:id/confirm
+10. POST /api/store-admin/orders/:id/reject
+11. POST /api/store-admin/orders/:id/mark-ready
+12. POST /api/store-admin/orders/:id/refund-ticket
+13. GET /api/store-admin/orders/counts
+14. Realtime event: order.created

@@ -1,0 +1,638 @@
+Table users {
+  id uuid [pk, default: `gen_random_uuid()`]
+
+  // Zalo fields
+  zalo_id varchar(100) [unique]
+
+  // Basic info
+  phone varchar(20) [unique]
+  email varchar(255) [unique]
+  full_name varchar(255)
+  avatar_url text
+
+  // Role & status
+  role varchar(50) [default: 'customer']
+  status varchar(50) [default: 'active']
+
+  // Location
+  gps_location point
+  gps_address text
+
+  // Stats
+  total_tickets_purchased int [default: 0]
+  total_tickets_used int [default: 0]
+  total_wins int [default: 0]
+  total_orders int [default: 0]
+
+  // Timestamps
+  last_active_at timestamp
+  last_login_at timestamp
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  deleted_at timestamp
+
+  Indexes {
+    (zalo_id)
+    (phone)
+    (role, status)
+  }
+}
+
+Table user_settings {
+  user_id uuid [pk, ref: > users.id]
+
+  notif_winner boolean [default: true]
+  notif_order boolean [default: true]
+  notif_room boolean [default: true]
+  notif_ticket_expiry boolean [default: true]
+  notif_promotion boolean [default: false]
+
+  notif_via_zalo_oa boolean [default: true]
+  notif_via_zalo_miniapp boolean [default: true]
+
+  gps_enabled boolean [default: false]
+  share_phone boolean [default: false]
+
+  language varchar(10) [default: 'vi']
+  theme varchar(20) [default: 'light']
+
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table user_balances {
+  user_id uuid [pk, ref: > users.id]
+
+  available_balance int [default: 0]
+  locked_balance int [default: 0]
+  used_balance int [default: 0]
+  expired_balance int [default: 0]
+
+  total_lifetime_purchased int [default: 0]
+  total_lifetime_used int [default: 0]
+
+  last_updated timestamp [default: `now()`]
+  version int [default: 0]
+}
+
+Table tickets {
+  id uuid [pk, default: `gen_random_uuid()`]
+  ticket_code varchar(50) [unique, not null]
+  user_id uuid [ref: > users.id]
+
+  status varchar(50) [default: 'AVAILABLE']
+
+  value_amount decimal(15,2) [default: 5000]
+  purchased_price decimal(15,2)
+
+  purchased_at timestamp [default: `now()`]
+  expired_at timestamp
+
+  source_type varchar(50)
+  source_id uuid
+
+  locked_at timestamp
+  locked_by varchar(100)
+  lock_expires_at timestamp
+
+  used_in_room_id uuid
+  used_in_order_id uuid
+  used_at timestamp
+
+  batch_id uuid
+  qr_code text
+
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  Indexes {
+    (user_id)
+    (status)
+    (ticket_code)
+    (expired_at)
+    (user_id, status)
+    (locked_by)
+  }
+}
+
+Table ticket_ledger {
+  id uuid [pk, default: `gen_random_uuid()`]
+  ticket_id uuid [ref: > tickets.id]
+  user_id uuid [ref: > users.id]
+
+  action_type varchar(50) [not null]
+
+  amount_change int [not null]
+  balance_before int
+  balance_after int
+
+  reference_id uuid
+  reference_type varchar(50)
+
+  metadata jsonb
+
+  created_at timestamp [default: `now()`]
+
+  Indexes {
+    (ticket_id)
+    (user_id)
+    (action_type)
+    (created_at)
+    (user_id, action_type, created_at)
+  }
+}
+
+Table ticket_locks {
+  lock_key varchar(255) [pk]
+  lock_value varchar(255)
+  owner varchar(255)
+  ttl_seconds int [default: 300]
+
+  acquired_at timestamp [default: `now()`]
+  expires_at timestamp
+
+  Indexes {
+    (expires_at)
+  }
+}
+
+Table ticket_batches {
+  id uuid [pk, default: `gen_random_uuid()`]
+  batch_code varchar(50) [unique, not null]
+  user_id uuid [ref: > users.id]
+
+  quantity int [not null]
+  total_amount decimal(15,2)
+
+  status varchar(50) [default: 'completed']
+
+  created_at timestamp [default: `now()`]
+  completed_at timestamp
+}
+
+Table rooms {
+  id uuid [pk, default: `gen_random_uuid()`]
+  room_code varchar(20) [not null]
+  room_date date [not null]
+  room_number int [not null]
+
+  status varchar(50) [default: 'WAITING']
+
+  current_votes int [default: 0]
+  required_votes int [default: 1000]
+
+  prize_type varchar(100) [default: 'electric_bike']
+  prize_value decimal(15,2)
+  prize_description text
+  prize_image_url text
+
+  winner_id uuid [ref: > users.id]
+  winner_ticket_id uuid [ref: > tickets.id]
+  winner_name varchar(255)
+
+  draw_started_at timestamp
+  draw_completed_at timestamp
+
+  draw_seed varchar(255)
+  block_hash varchar(255)
+  tx_hash varchar(255)
+
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  Indexes {
+    (room_date)
+    (status)
+    (room_date, status)
+    (current_votes)
+    (winner_id)
+    (room_date, room_number) [unique]
+  }
+}
+
+Table room_tickets {
+  id uuid [pk, default: `gen_random_uuid()`]
+  room_id uuid [ref: > rooms.id]
+  ticket_id uuid [ref: > tickets.id]
+  user_id uuid [ref: > users.id]
+
+  joined_at timestamp [default: `now()`]
+  is_winner boolean [default: false]
+  is_refunded boolean [default: false]
+
+  Indexes {
+    (room_id)
+    (user_id)
+    (room_id, ticket_id) [unique]
+  }
+}
+
+Table room_schedules {
+  id uuid [pk, default: `gen_random_uuid()`]
+
+  schedule_type varchar(50)
+  is_active boolean [default: true]
+
+  cron_expression varchar(100)
+  timezone varchar(50) [default: 'Asia/Ho_Chi_Minh']
+
+  last_run_at timestamp
+  next_run_at timestamp
+  last_run_status varchar(50)
+  last_run_message text
+
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table draws {
+  id uuid [pk, default: `gen_random_uuid()`]
+  room_id uuid [ref: > rooms.id]
+  draw_code varchar(50) [unique, not null]
+
+  status varchar(50) [default: 'pending']
+
+  random_seed varchar(255)
+  algorithm varchar(50) [default: 'seed_hash']
+
+  block_hash varchar(255)
+  block_number bigint
+  block_timestamp timestamp
+
+  winner_ticket_id uuid [ref: > tickets.id]
+  winner_user_id uuid [ref: > users.id]
+  winner_index int
+
+  tx_hash varchar(255)
+  tx_status varchar(50)
+  tx_gas_fee decimal(15,2)
+
+  started_at timestamp
+  completed_at timestamp
+
+  created_at timestamp [default: `now()`]
+
+  Indexes {
+    (room_id)
+    (status)
+    (draw_code)
+  }
+}
+
+Table draw_logs {
+  id uuid [pk, default: `gen_random_uuid()`]
+  draw_id uuid [ref: > draws.id]
+
+  log_level varchar(20)
+  log_type varchar(50)
+  message text
+  metadata jsonb
+
+  created_at timestamp [default: `now()`]
+
+  Indexes {
+    (draw_id)
+    (log_level)
+  }
+}
+
+Table draw_blockchain {
+  id uuid [pk, default: `gen_random_uuid()`]
+  draw_id uuid [ref: > draws.id]
+  room_id uuid [ref: > rooms.id]
+
+  blockchain_network varchar(50)
+  contract_address varchar(255)
+
+  draw_hash varchar(255)
+  transaction_hash varchar(255)
+  block_explorer_url text
+
+  published_at timestamp
+  verified_at timestamp
+
+  created_at timestamp [default: `now()`]
+}
+Table stores {
+  id uuid [pk, default: `gen_random_uuid()`]
+  store_code varchar(50) [unique, not null]
+  owner_id uuid [ref: > users.id]
+
+  name varchar(255) [not null]
+  description text
+  address text [not null]
+  location point
+  phone varchar(20)
+  email varchar(255)
+  logo_url text
+  cover_image text
+  license_number varchar(100)
+  license_image text
+
+  status varchar(50) [default: 'pending']
+  is_open boolean [default: true]
+  open_time time [default: '09:00:00']
+  close_time time [default: '21:00:00']
+
+  commission_rate decimal(5,2) [default: 10.00]
+
+  rating_avg decimal(3,2) [default: 0]
+  rating_count int [default: 0]
+
+  min_order_tickets int [default: 1]
+  max_order_tickets int [default: 100]
+
+  approved_by uuid [ref: > users.id]
+  approved_at timestamp
+  rejection_reason text
+
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  deleted_at timestamp
+
+  Indexes {
+    (status)
+    (owner_id)
+    (store_code)
+  }
+}
+
+Table store_menu {
+  id uuid [pk, default: `gen_random_uuid()`]
+  store_id uuid [ref: > stores.id]
+
+  item_code varchar(50)
+  item_name varchar(255) [not null]
+  description text
+  price decimal(15,2) [not null]
+  original_price decimal(15,2)
+
+  is_lucky_item boolean [default: true]
+
+  category varchar(100)
+  sub_category varchar(100)
+  image_url text
+
+  is_available boolean [default: true]
+  is_featured boolean [default: false]
+
+  sort_order int [default: 0]
+
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  Indexes {
+    (store_id)
+    (store_id, is_available)
+    (store_id, is_lucky_item)
+  }
+}
+
+Table store_reviews {
+  id uuid [pk, default: `gen_random_uuid()`]
+  store_id uuid [ref: > stores.id]
+  user_id uuid [ref: > users.id]
+  order_id uuid
+
+  rating int
+  comment text
+  images text[]
+
+  replied_by uuid [ref: > users.id]
+  reply_text text
+  replied_at timestamp
+
+  is_hidden boolean [default: false]
+  hidden_reason text
+
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  Indexes {
+    (store_id)
+    (user_id)
+    (rating)
+  }
+}
+
+Table store_hours {
+  id uuid [pk, default: `gen_random_uuid()`]
+  store_id uuid [ref: > stores.id]
+
+  day_of_week int
+  open_time time
+  close_time time
+  is_closed boolean [default: false]
+
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  Indexes {
+    (store_id, day_of_week) [unique]
+  }
+}
+
+Table store_service_areas {
+  id uuid [pk, default: `gen_random_uuid()`]
+  store_id uuid [ref: > stores.id]
+
+  area_name varchar(255)
+  area_polygon text
+  delivery_fee decimal(15,2) [default: 0]
+  min_order_amount decimal(15,2) [default: 0]
+
+  is_active boolean [default: true]
+
+  created_at timestamp [default: `now()`]
+
+  Indexes {
+    (store_id)
+  }
+}
+Table orders {
+  id uuid [pk, default: `gen_random_uuid()`]
+  order_code varchar(50) [unique, not null]
+
+  user_id uuid [ref: > users.id]
+  store_id uuid [ref: > stores.id]
+
+  status varchar(50) [default: 'pending']
+
+  total_tickets_used int [default: 0]
+  total_amount decimal(15,2) [default: 0]
+  discount_amount decimal(15,2) [default: 0]
+  final_amount decimal(15,2) [default: 0]
+
+  delivery_address text
+  delivery_location point
+  delivery_phone varchar(20)
+  delivery_note text
+
+  confirmed_at timestamp
+  preparing_at timestamp
+  ready_at timestamp
+  delivered_at timestamp
+  cancelled_at timestamp
+  timeout_at timestamp
+
+  cancel_reason text
+  cancelled_by uuid [ref: > users.id]
+
+  sla_timeout_minutes int [default: 15]
+  sla_warning_sent boolean [default: false]
+
+  zalo_notification_sent boolean [default: false]
+
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  Indexes {
+    (user_id)
+    (store_id)
+    (status)
+    (order_code)
+    (created_at)
+  }
+}
+
+Table order_items {
+  id uuid [pk, default: `gen_random_uuid()`]
+  order_id uuid [ref: > orders.id]
+  menu_item_id uuid [ref: > store_menu.id]
+
+  item_name varchar(255)
+  quantity int [default: 1]
+  unit_price decimal(15,2)
+  total_price decimal(15,2)
+
+  special_instructions text
+
+  created_at timestamp [default: `now()`]
+
+  Indexes {
+    (order_id)
+  }
+}
+
+Table order_tickets {
+  id uuid [pk, default: `gen_random_uuid()`]
+  order_id uuid [ref: > orders.id]
+  ticket_id uuid [ref: > tickets.id]
+  user_id uuid [ref: > users.id]
+
+  used_at timestamp [default: `now()`]
+
+  Indexes {
+    (order_id)
+    (ticket_id)
+    (order_id, ticket_id) [unique]
+  }
+}
+
+Table order_status_history {
+  id uuid [pk, default: `gen_random_uuid()`]
+  order_id uuid [ref: > orders.id]
+
+  old_status varchar(50)
+  new_status varchar(50)
+  changed_by uuid [ref: > users.id]
+  changed_by_role varchar(50)
+  reason text
+
+  created_at timestamp [default: `now()`]
+
+  Indexes {
+    (order_id)
+  }
+}
+Table refunds {
+  id uuid [pk, default: `gen_random_uuid()`]
+  refund_code varchar(50) [unique, not null]
+
+  user_id uuid [ref: > users.id]
+  ticket_id uuid [ref: > tickets.id]
+
+  refund_type varchar(50)
+  reason text
+  reason_code varchar(50)
+
+  old_status varchar(50)
+  new_status varchar(50) [default: 'REFUNDED']
+
+  source_type varchar(50)
+  source_id uuid
+
+  processed_by uuid [ref: > users.id]
+  processed_at timestamp
+
+  metadata jsonb
+
+  created_at timestamp [default: `now()`]
+
+  Indexes {
+    (user_id)
+    (ticket_id)
+    (refund_code)
+  }
+}
+
+Table refund_logs {
+  id uuid [pk, default: `gen_random_uuid()`]
+  refund_id uuid [ref: > refunds.id]
+
+  action varchar(50)
+  details text
+  metadata jsonb
+
+  created_at timestamp [default: `now()`]
+}
+Table complaints {
+  id uuid [pk, default: `gen_random_uuid()`]
+  complaint_code varchar(50) [unique, not null]
+
+  user_id uuid [ref: > users.id]
+  store_id uuid [ref: > stores.id]
+  order_id uuid [ref: > orders.id]
+
+  complaint_type varchar(50)
+  severity varchar(20) [default: 'normal']
+
+  title varchar(255)
+  description text
+  images text[]
+
+  status varchar(50) [default: 'pending']
+
+  assigned_to uuid [ref: > users.id]
+  resolved_by uuid [ref: > users.id]
+
+  resolution_note text
+  refund_requested boolean [default: false]
+  refund_id uuid [ref: > refunds.id]
+
+  resolved_at timestamp
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  Indexes {
+    (user_id)
+    (store_id)
+    (status)
+  }
+}
+
+Table complaint_messages {
+  id uuid [pk, default: `gen_random_uuid()`]
+  complaint_id uuid [ref: > complaints.id]
+
+  sender_id uuid [ref: > users.id]
+  sender_type varchar(50)
+
+  message text
+  attachments text[]
+
+  is_from_admin boolean [default: false]
+  is_read boolean [default: false]
+
+  created_at timestamp [default: `now()`]
+}

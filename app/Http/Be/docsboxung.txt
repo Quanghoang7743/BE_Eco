@@ -1,0 +1,138 @@
+I. ADMIN CỬA HÀNG
+
+1. Quản lý thông tin cửa hàng
+Bổ sung:
+Liên hệ với chuyên viên cửa hàng phụ trách cửa hàng
+Tên chuyên viên cửa hàng
+SĐT
+Zalo
+Email
+Ghi chú hỗ trợ
+Trang trí cửa hàng
+Banner cửa hàng
+Ảnh đại diện (logo shop)
+Ảnh bìa
+Màu chủ đạo thương hiệu
+Slogan cửa hàng
+Mô tả cửa hàng
+Link cửa hàng riêng
+URL cửa hàng riêng biệt
+Mã QR cửa hàng
+QR chứa:
+logo
+tên cửa hàng
+link truy cập nhanh
+
+2. Đối soát tài chính
+Đối soát theo:
+Ngày
+Tháng
+Năm
+Hiển thị chi tiết:
+Doanh thu chuyển khoản
+Doanh thu tiền mặt
+Ship COD
+Affiliate commission
+Ticket reward
+Hoàn đơn
+Hủy đơn
+Công thức:
+Tổng thực nhận = Tổng doanh thu - Affiliate - Ticket
+Quy trình xác nhận cuối ngày:
+Cuối ngày
+→ Shop bắt buộc xác nhận
+→ Chờ nhận tiền
+→ Đã nhận tiền
+→ Gửi email giao dịch thành công + bill đối soát
+Email bao gồm:
+Chi tiết giao dịch
+Tổng doanh thu
+Tổng thực nhận
+File bill PDF đính kèm
+
+3. Chat với khách hàng
+Chức năng:
+Chat trực tiếp với khách hàng
+Gửi hình ảnh
+Gửi file
+Thông báo realtime
+Lưu lịch sử chat
+Hỗ trợ sau bán hàng
+
+4. Trạng thái đơn hàng
+Bổ sung đầy đủ:
+Chờ xác nhận
+Đang chuẩn bị
+Đang giao
+Giao thành công
+Hoàn hàng
+Hủy đơn
+
+5. Phân quyền nhân viên
+Theo nhóm quyền:
+Thu ngân
+Phục vụ
+Bar/Bếp
+Quản lý cửa hàng
+Chủ cửa hàng
+Chức năng:
+Tạo nhóm quyền
+Gán quyền chi tiết theo module
+Giới hạn thao tác
+
+6. Giấy phép kinh doanh
+Bổ sung:
+Tự thêm loại giấy phép mới
+Upload không giới hạn số lượng
+Ví dụ:
+Giấy phép ATTP
+Giấy phép PCCC
+Giấy phép rượu bia
+Giấy phép y tế
+Giấy phép môi trường
+
+II. AFFILIATE
+
+1. Affiliate trọn đời
+Hỗ trợ chia sẻ:
+Link sản phẩm
+Link cửa hàng
+Name card giới thiệu
+Cơ chế:
+Gắn user trọn đời
+Hoa hồng lâu dài
+Theo dõi lịch sử commission
+
+2. Người chia sẻ
+Chức năng:
+Xóa thành viên khỏi hệ thống
+Điều kiện:
+Có quyền quản lý tuyến dưới
+
+3. Khách hàng report F1
+Chức năng:
+Khách hàng có thể report người giới thiệu (F1)
+Sau khi report:
+Admin xem xét
+Có quyền xóa F2 khỏi F1
+Chuyển tuyến hệ thống nếu cần
+
+4. Nhóm API cho Người chia sẻ (User/Affiliate)
+Chú ý:
+- Các API yêu cầu đăng nhập `auth:sanctum` và giới hạn tần suất để chống spam.
+- "F1" = tuyến giới thiệu trực tiếp của người báo cáo/affiliate hiện tại.
+
+API User/Affiliate:
+1) GET /api/affiliate/links
+- Lấy danh sách link sản phẩm, link cửa hàng và Name card giới thiệu của user hiện tại.
+
+2) GET /api/affiliate/downline?depth=5
+- Lấy danh sách thành viên tuyến dưới (F1, F2...) kèm doanh số họ tạo ra (đang dùng thống kê từ orders/commission_users theo logic hiện có).
+
+3) DELETE /api/affiliate/downline/{userId}
+- Xóa/Detach 1 thành viên khỏi tuyến dưới của user hiện tại (chỉ người có quyền quản lý tuyến dưới được phép).
+- Thực hiện theo hướng "detach" để không làm đứt gãy lịch sử hoa hồng.
+
+4) POST /api/affiliate/report-uplline
+- F2 gửi report khiếu nại về người giới thiệu trực tiếp (F1/upline).
+- Backend tạo record ở bảng `complaints` với `complaint_type = affiliate_dispute` và kèm 1 message đầu tiên.

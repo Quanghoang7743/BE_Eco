@@ -1,0 +1,1 @@
+<div class="fw-semibold">{{ $ticket->owner_name ?? 'N/A' }}</div><div><small class="text-muted">User: {{ $ticket->user_id ?? 'N/A' }}</small></div><div><small class="text-muted">SĐT: {{ $ticket->user_phone ?? 'N/A' }}</small></div><div><small class="text-muted">Email: {{ $ticket->user_email ?? 'N/A' }}</small></div>

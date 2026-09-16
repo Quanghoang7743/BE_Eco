@@ -1,0 +1,1 @@
+@if ($ticket->status === 'AVAILABLE')<span class="badge bg-success">AVAILABLE</span>@elseif ($ticket->status === 'USED_IN_ROOM')<span class="badge bg-info text-dark">USED_IN_ROOM</span>@else<span class="badge bg-secondary">{{ $ticket->status }}</span>@endif

@@ -1,0 +1,32 @@
+<IfModule mod_setenvif.c>
+    SetEnvIf Request_URI "^/storage/" is_storage_request
+</IfModule>
+
+<IfModule mod_headers.c>
+    # CORS for public storage files served directly by Apache.
+    Header always set Access-Control-Allow-Origin "*" env=is_storage_request
+    Header always set Access-Control-Allow-Methods "GET, OPTIONS" env=is_storage_request
+    Header always set Access-Control-Allow-Headers "Authorization, Content-Type, Accept, Origin, X-Requested-With" env=is_storage_request
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Send Requests To Front Controller...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>

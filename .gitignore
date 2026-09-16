@@ -1,0 +1,57 @@
+# Bỏ qua tất cả
+*
+
+# Cho phép các thư mục và file cụ thể
+!app/
+!bootstrap/
+!config/
+!database/
+!public/
+!resources/
+!routes/
+!storage/
+!tests/
+tests/*
+!tests/TestCase.php
+!tests/Support/
+tests/Support/*
+!tests/Support/BootstrapsAffiliateTestSchema.php
+!tests/Support/TestDatabaseSafety.php
+!tests/Feature/
+tests/Feature/*
+!tests/Feature/AffiliateManualWithdrawLifecycleTest.php
+!tests/Feature/AffiliateMembersApiTest.php
+!tests/Feature/BackfillApprovedUserVerificationsCommandTest.php
+!tests/Feature/ClientCommissionReferralOrdersTest.php
+!tests/Feature/ClientCommissionPayoutBatchTest.php
+!tests/Feature/ProductReturnWaiverTest.php
+!tests/Unit/
+tests/Unit/*
+!tests/Unit/StoreCreditRuntimeTest.php
+!tests/Unit/OrderReturnServiceTest.php
+!tests/Unit/ComplaintReturnResponseFlowTest.php
+!tests/Unit/ReturnEvidencePathsTest.php
+!tests/Unit/SafeEmailTest.php
+!tests/Unit/AffiliateCommissionServiceTest.php
+!tests/Unit/TestDatabaseSafetyTest.php
+!tests/Unit/TestDatabaseIsolationTest.php
+
+# Cho phép các file cần thiết
+!.gitignore
+!composer.json
+!phpunit.xml.dist
+!artisan
+!AGENTS.md
+
+# Cho phép tất cả file bên trong các thư mục đã bật
+!app/**/*
+!bootstrap/**/*
+!config/**/*
+!database/**/*
+!public/**/*
+!resources/**/*
+!routes/**/*
+!storage/**/*
+
+.composer.lock
+AGENTS.md

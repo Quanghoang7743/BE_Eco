@@ -1,0 +1,551 @@
+TÀI LIỆU HỆ THỐNG ECOLUCK
+TÓM TẮT LUỒNG NGHIỆP VỤ CHÍNH 
+Luồng
+Mô tả
+1
+Khách mua hàng → 1 món = 1 vé → vé tích lũy qua nhiều ngày
+2
+Mỗi ngày có 40 phòng quay, tương ứng 40 giải xe điện
+3
+Mỗi phòng cần đủ 1000 vé thì mới quay
+4
+Khách có thể mua vé trước (100 vé) → gọi món sau
+5
+Vào chi tiết vé để gọi món → chọn quán gần đó → cửa hàng nhận đơn
+
+1. CHỨC NĂNG ADMIN HỆ THỐNG
+ID
+Chức năng
+Mô tả
+Quản lý phòng quay
+
+
+
+
+S01
+Cấu hình số phòng mỗi ngày
+Thiết lập số lượng phòng quay mỗi ngày (mặc định 40 phòng/ngày)
+S02
+Cấu hình vé/phòng
+Thiết lập số vé tối thiểu để quay (mặc định 1000 vé/phòng)
+S03
+Tạo phòng quay tự động
+Hệ thống tự động tạo 40 phòng mới vào đầu mỗi ngày (hoặc theo lịch)
+S04
+Xem danh sách phòng
+Xem tất cả phòng quay theo ngày, trạng thái (chờ đủ vé, đang quay, đã quay)
+S05
+Force quay
+Nếu phòng đã đủ 1000 vé nhưng chưa tự động quay → admin có thể kích quay thủ công
+S06
+Hủy phòng (khẩn cấp)
+Hủy phòng trước khi quay → hoàn vé cho tất cả khách tham gia
+Quản lý giải thưởng
+
+
+
+
+S07
+Cấu hình giải thưởng mặc định
+Mỗi phòng có 1 giải xe điện (trị giá có thể cấu hình)
+S08
+Xem danh sách người trúng
+Theo dõi ai đã trúng xe điện ở phòng nào, ngày nào
+Quản lý vé
+
+
+
+
+S09
+Xem tổng số vé đã phát
+Thống kê theo ngày, theo cửa hàng
+S10
+Xem vé chưa dùng (chưa gọi món)
+Vé đã mua nhưng chưa đổi thành món
+S11
+Xem vé đã gọi món
+Vé đã được dùng để gọi món tại cửa hàng
+Quản lý cửa hàng & đơn hàng
+
+
+
+
+S12
+Duyệt cửa hàng mới
+Phê duyệt hoặc từ chối cửa hàng đăng ký
+S13
+Xem tất cả đơn hàng
+Theo dõi đơn hàng từ tất cả cửa hàng
+S14
+Xem báo cáo doanh thu hợp nhất
+Doanh thu từ các cửa hàng, tổng vé đã bán
+Quản lý khiếu nại
+
+
+
+
+S15
+Xem khiếu nại toàn hệ thống
+Khiếu nại từ khách hàng, phân công cho admin cửa hàng
+Cấu hình hệ thống
+
+
+
+
+S16
+Cấu hình thời gian hết hạn vé
+Ví dụ: vé có hiệu lực trong 30 ngày kể từ khi mua
+S17
+Cấu hình tỷ lệ hoa hồng
+% hoa hồng từ mỗi đơn hàng của cửa hàng
+S18
+Cấu hình blockchain
+Địa chỉ smart contract, network, gas fee
+Ví vé & Lịch sử (Ledger)
+
+
+
+
+S19
+Lịch sử biến động vé (Ledger)
+Ghi lại mọi biến động của từng vé: + từ đơn hàng, - join phòng, - gọi món, + refund. Không thể sửa/xóa.
+S20
+Xem ledger của user
+Admin có thể tra cứu toàn bộ lịch sử vé của bất kỳ user nào (để audit, giải quyết khiếu nại)
+Hoàn vé (Refund Flow)
+
+
+
+
+S21
+Hoàn vé tự động khi cửa hàng từ chối đơn
+Nếu admin cửa hàng từ chối đơn (hết món, ngoài khu vực) → hệ thống tự động hoàn vé vào ví user
+S22
+Hoàn vé khi hủy phòng
+Nếu admin hủy phòng trước khi quay → hoàn vé cho tất cả user đã tham gia
+S23
+Hoàn vé khi lỗi hệ thống
+Admin có thể hoàn vé thủ công (ghi rõ lý do, lưu log)
+Anti double spend
+
+
+
+
+S24
+Lock vé khi sử dụng
+Khi user join phòng hoặc tạo đơn gọi món → vé chuyển trạng thái LOCKED, không thể dùng đồng thời
+S25
+Timeout lock
+Nếu lock quá 5 phút không hoàn tất → tự động unlock (giải phóng vé)
+Cron & Automation
+
+
+
+
+S26
+Job: Tạo 40 phòng mỗi ngày
+Tự động tạo 40 phòng quay vào đầu mỗi ngày (ví dụ 00:05)
+S27
+Job: Auto quay khi đủ 1000 vé
+Liên tục kiểm tra phòng nào đủ 1000 vé → đẩy vào queue quay thưởng
+S28
+Job: Auto expire vé
+Vé tồn tại quá 30 ngày chưa dùng → tự động hết hạn (chuyển sang EXPIRED)
+S29
+Job: Auto cancel order timeout
+Đơn hàng không được xác nhận trong X phút → tự động hủy + hoàn vé
+Realtime (WebSocket)
+
+
+
+
+S30
+Cấu hình WebSocket server
+Định nghĩa các event: room:update_votes, room:feed, room:draw_start, room:draw_result
+S31
+Giám sát WebSocket connection
+Theo dõi số user đang kết nối real-time
+Engine quay thưởng
+
+
+
+
+S32
+Cấu hình random engine
+Chọn thuật toán: seed + hash, dùng blockhash từ blockchain để minh bạch
+S33
+Lưu log quay thưởng
+Mỗi lần quay lưu: seed, result, timestamp, hash (có thể public sau)
+S34
+Public hash (blockchain)
+Ghi kết quả quay lên blockchain (Polygon/BNB) để khách hàng tự verify
+Anti abuse
+
+
+
+
+S35
+Giới hạn vé/phòng/user
+Cấu hình: 1 user tối đa bao nhiêu vé trong 1 phòng (ví dụ max 200 vé)
+S36
+Rate limit join phòng
+Mỗi user chỉ join tối đa N lần/phút (chống spam)
+S37
+Giới hạn gọi món/ngày
+1 user tối đa N đơn hàng/ngày
+Transaction & Queue
+
+
+
+
+S38
+Cấu hình transaction DB
+Đảm bảo mọi giao dịch vé (join phòng, gọi món) là atomic
+S39
+Cấu hình queue system
+Redis/Bull: queue quay thưởng, queue gửi notification, queue xử lý đơn
+Notification system
+
+
+
+
+S40
+Cấu hình notification template
+Trúng thưởng, xác nhận đơn hàng, phòng sắp quay, sắp hết hạn vé
+Tracking & Analytics
+
+
+
+
+S41
+Funnel báo cáo
+Mua → có vé → tham gia phòng → trúng thưởng. Tỷ lệ chuyển đổi từng bước
+S42
+Retention user
+User quay lại sau 7 ngày, 30 ngày
+Business mapping
+
+
+
+
+S43
+Quy đổi 1 vé = tiền
+Cấu hình giá trị 1 vé (ví dụ 5.000đ/vé) để tính toán ROI
+S44
+Tính toán cost coverage
+Báo cáo: Tổng doanh thu vé đã bán vs Tổng chi phí giải thưởng (xe điện)
+S45
+Thanh toán cho cửa hàng (cuối ngày)
+Tổng hợp số món đã gọi bằng vé → tính tiền → chuyển cho admin cửa hàng
+
+2. CHỨC NĂNG ADMIN CỬA HÀNG
+ID
+Chức năng
+Mô tả
+Quản lý cửa hàng & hồ sơ
+
+
+
+
+C01
+Đăng ký cửa hàng
+Tạo hồ sơ cửa hàng (tên, địa chỉ, SĐT, logo, giấy phép) → gửi duyệt admin hệ thống
+C02
+Cập nhật thông tin cửa hàng
+Địa chỉ, SĐT, giờ mở cửa, trạng thái mở/đóng
+C03
+Xem trạng thái duyệt
+Chờ duyệt / Đã duyệt / Bị từ chối
+Quản lý menu & giá
+
+
+
+
+C04
+Thiết lập giá bán
+1 giá duy nhất cho toàn bộ menu (theo yêu cầu: 1-2 giá)
+C05
+Danh sách món Lucky
+Chọn món nào thuộc danh mục "LUCKY MENU" (1 món = 1 vé)
+C06
+Bật/tắt món
+Tạm dừng bán món nào đó
+Quản lý đơn hàng (từ vé gọi món)
+
+
+
+
+C07
+Xem danh sách đơn hàng
+Các đơn hàng được tạo từ chi tiết vé (khách chọn quán gần đó)
+C08
+Lọc đơn hàng theo trạng thái
+Chờ xác nhận / Đang làm / Đã giao / Đã hủy
+C09
+Xác nhận đơn hàng
+Khi khách gọi món, cửa hàng nhận thông báo → xác nhận hoặc từ chối
+C10
+Cập nhật trạng thái giao hàng
+Đang làm → Đã giao thành công
+C11
+Xem chi tiết đơn hàng
+Sản phẩm, số lượng, giá, thông tin khách (ẩn SĐT 1 phần), mã vé liên quan
+Quản lý vé (liên quan đến cửa hàng)
+
+
+
+
+C12
+Xem vé đã gọi món tại cửa hàng
+Danh sách vé được dùng để gọi món ở cửa hàng mình
+Báo cáo cửa hàng
+
+
+
+
+C13
+Báo cáo doanh thu
+Theo ngày/tuần/tháng, tổng tiền từ đơn hàng
+C14
+Báo cáo số lượng vé đã đổi
+Bao nhiêu vé đã được gọi món thành công
+C15
+Xuất báo cáo CSV/Excel
+
+
+Quản lý khiếu nại
+
+
+
+
+C16
+Xem khiếu nại liên quan
+Khiếu nại về đơn hàng, món ăn của cửa hàng mình
+C17
+Xử lý khiếu nại
+Trả lời khách, xác nhận hoặc từ chối yêu cầu
+C18
+Gửi yêu cầu hoàn vé (lên admin hệ thống)
+Nếu lỗi từ phía cửa hàng → đề xuất hoàn vé cho khách
+Quản lý trạng thái nhận đơn
+
+
+
+
+C19
+Bật/tắt nhận đơn theo thời gian
+Cửa hàng có thể cài đặt giờ nhận đơn (ví dụ 9h-21h). Ngoài giờ → không nhận đơn mới
+C20
+Tạm nghỉ (out of stock)
+Bật chế độ "tạm nghỉ" → không nhận đơn, hiển thị thông báo cho khách
+Từ chối đơn có lý do
+
+
+
+
+C21
+Từ chối đơn kèm lý do
+Các lý do mặc định: "Hết món", "Quá tải đơn hàng", "Ngoài khu vực giao hàng"
+C22
+Hệ thống tự động hoàn vé khi từ chối
+Khi admin cửa hàng từ chối → gọi API hoàn vé (không cần admin hệ thống can thiệp)
+SLA xử lý đơn
+
+
+
+
+C23
+Cấu hình SLA
+Admin cửa hàng có thể xem SLA của mình: "Xác nhận đơn trong vòng X phút" (do admin hệ thống set)
+C24
+Cảnh báo sắp hết SLA
+Gửi notification đến admin cửa hàng khi đơn sắp timeout (vd: còn 2 phút)
+C25
+Xem lịch sử đơn timeout
+Đơn nào đã bị hủy do không xác nhận đúng hạn
+
+3. CHỨC NĂNG KHÁCH HÀNG (MINI APP)
+ID
+Chức năng
+Mô tả
+Màn hình liên quan
+Quản lý vé & mua vé
+
+
+
+
+
+
+K01
+Mua vé trước (không gọi món ngay)
+Khách có thể mua 100 vé → chưa cần chọn món, vé tích vào tài khoản
+Màn 1, 9, 10
+K02
+Xem tổng số vé hiện có
+Hiển thị số vé đang có (tích lũy qua nhiều ngày)
+Màn 8
+K03
+Xem danh sách vé (từng mã vé)
+Mỗi vé có mã riêng, trạng thái (chưa gọi món / đã gọi món)
+Màn 8
+Gọi món từ vé
+
+
+
+
+
+
+K04
+Vào chi tiết vé
+Click vào từng vé → xem chi tiết
+Màn 7
+K05
+Chọn gọi món (từ chi tiết vé)
+Từ màn hình chi tiết vé → nút "Gọi món"
+Màn 7
+K06
+Chọn cửa hàng gần nhất
+Hiển thị danh sách cửa hàng theo khoảng cách (GPS)
+Màn mới (chọn quán)
+K07
+Chọn món từ menu của cửa hàng
+Mỗi cửa hàng có menu riêng, giá theo cấu hình của cửa hàng
+Màn mới (chọn món)
+K08
+Xác nhận đơn hàng (gọi món)
+Gửi đơn hàng → cửa hàng nhận được thông báo
+Màn xác nhận
+K09
+Theo dõi trạng thái đơn hàng
+Chờ xác nhận → Đang làm → Đã giao
+Màn lịch sử đơn hàng
+Tham gia phòng quay
+
+
+
+
+
+
+K10
+Xem danh sách phòng hôm nay
+Mỗi ngày có 40 phòng, mỗi phòng cần 1000 vé
+Màn 5
+K11
+Xem tiến độ từng phòng
+Hiển thị số vé hiện tại / 1000, real-time
+Màn 1, 5, 6
+K12
+Chọn phòng để tham gia
+Dùng vé (đã có sẵn) để đăng ký vào phòng
+Màn 2, 3
+K13
+Xem phòng đã tham gia
+Danh sách phòng đã đăng ký (sắp quay, đang quay, đã quay)
+Màn 4
+Quay thưởng
+
+
+
+
+
+
+K14
+Xem kết quả quay
+Khi phòng đủ 1000 vé → tự động quay → hiển thị người trúng
+Màn 11
+K15
+Xem lịch sử trúng thưởng
+Cá nhân đã trúng giải nào (xe điện, voucher, ...)
+Màn 12
+Quản lý cá nhân
+
+
+
+
+
+
+K16
+Xem thông báo
+Thông báo khi trúng thưởng, khi đơn hàng được xác nhận
+Màn 13
+K17
+Xem trang cá nhân
+Tổng vé, số lần trúng, hạng
+Màn 14
+K18
+Xem thể lệ chương trình
+1 món = 1 vé, 40 phòng/ngày, 1000 vé/phòng
+Màn 15
+Lịch sử vé (Ledger)
+
+
+
+
+
+
+K19
+Xem lịch sử biến động vé
+Hiển thị dòng thời gian: +5 vé từ đơn #123, -3 vé join phòng ABC, +2 vé refund
+Màn 8 (tab mới)
+Hủy tham gia phòng
+
+
+
+
+
+
+K20
+Hủy tham gia phòng (trước khi quay)
+Cho phép rút vé khỏi phòng nếu phòng chưa đủ 1000 vé và chưa quay
+Màn 4 (nút "Rút vé")
+Trạng thái vé nâng cao
+
+
+
+
+
+
+K21
+Hiển thị trạng thái vé
+5 trạng thái: AVAILABLE (có thể dùng), LOCKED (đang xử lý), USED_IN_ROOM (đã vào phòng), USED_FOR_ORDER (đã gọi món), EXPIRED (hết hạn)
+Màn 7, Màn 8
+Xác định vị trí user
+
+
+
+
+
+
+K22
+Xin quyền GPS
+Khi gọi món từ vé → hiển thị popup xin quyền vị trí để tìm cửa hàng gần nhất
+
+
+K23
+Fallback nếu không có GPS
+Nếu user từ chối → cho phép nhập tay tên đường / quận / thành phố
+
+
+Đánh giá cửa hàng
+
+
+
+
+
+
+K24
+Đánh giá sau khi nhận món
+Sau khi đơn hàng được giao thành công → hiển thị form đánh giá (1-5 sao + comment)
+Màn sau giao hàng
+Notification trong app
+
+
+
+
+
+
+K25
+Nhận thông báo real-time
+Trúng thưởng, đơn hàng được xác nhận, phòng sắp quay, vé sắp hết hạn
+Màn 13
+
